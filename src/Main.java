@@ -2,38 +2,67 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 void main() throws IOException {
     // Create Server
-    var server = new ServerSocket(8080);
+    try (var server = new ServerSocket(8080)) {
+        // Main Loop
+        for (; ; ) {
+            // Accept client connection/socket
+            try (var socket = server.accept()) {
+                var reader = getReader(socket);
+                var rawReqLine = reader.readLine();
 
-    // Main Loop
-    for (; ; ) {
-        // Accept client connection/socket
-        try (var socket = server.accept()) {
-            var reader = getRequestReader(socket);
+                var requestLine = RequestLine.of(rawReqLine);
+                var headers = parseHeaders(reader);
 
-            var data = reader.readLine();
-            IO.println("[" + data + "]"); // request line
+                IO.println(requestLine);
+                IO.println(headers);
 
-            var headers = new HashMap<String, String>();
+                try (var out = socket.getOutputStream()) {
+                    var responseData = missingBody(headers) ?
+                            response("Hello World") :
+                            requestBody(headers, reader);
 
-            while (!(data = reader.readLine()).isEmpty()) {
-                var keyValue = data.split(": ", 2);
-
-                if (keyValue.length == 2) {
-                    headers.put(keyValue[0], keyValue[1]);
+                    out.write(responseData);
                 }
+            } catch (IOException exception) {
+                throw new RuntimeException(exception);
             }
+        }
+    } catch (RuntimeException exception) {
+        IO.println("[ERROR] " + exception);
+    }
+}
 
-            IO.println(headers);
+private static HashMap<String, String> parseHeaders(BufferedReader reader) throws IOException {
+    var headers = new HashMap<String, String>();
+    var data = "";
 
-            try (var out = socket.getOutputStream()) {
-                var responseData = containsBody(headers) ? "pong" : "hello";
-                byte[] responseBody = buildResponse(responseData);
-                out.write(responseBody);
-            }
-        } catch (IOException exception) {
-            IO.println("[ERROR] " + exception);
+    while (!(data = reader.readLine()).isEmpty()) {
+        var keyValue = data.split(": ", 2);
+
+        if (keyValue.length == 2) {
+            String key = keyValue[0];
+            String value = keyValue[1];
+            headers.put(key, value);
         }
     }
+
+    return headers;
+}
+
+private static char[] parseBody(Map<String, String> headers, BufferedReader reader) throws IOException {
+    var contentLength = getContentLength(headers);
+    var body = new char[contentLength];
+    int bytesRead = reader.read(body, 0, contentLength);
+    IO.println("Body bytes parsed: " + bytesRead);
+    return body;
+}
+
+private static Integer getContentLength(Map<String, String> headers) {
+    return Integer.valueOf(headers.get("Content-Length"));
+}
+
+private static boolean missingBody(HashMap<String, String> headers) {
+    return !containsBody(headers);
 }
 
 private static boolean containsBody(HashMap<String, String> headers) {
@@ -47,7 +76,16 @@ public static String TEMPLATE = """
         \r
         %s""";
 
-private static byte[] buildResponse(String value) {
+public static byte[] requestBody(Map<String, String> headers, BufferedReader reader) throws IOException {
+    var reqBody = parseBody(headers, reader);
+    return response(reqBody);
+}
+
+private static byte[] response(char[] value) {
+    return response(new String(value));
+}
+
+private static byte[] response(String value) {
     byte[] bodyBytes = value.getBytes(UTF_8);
     var response = TEMPLATE.formatted(bodyBytes.length, value);
     return response.getBytes(UTF_8);
@@ -56,6 +94,16 @@ private static byte[] buildResponse(String value) {
 /// - InputStream -> byte[]
 /// - InputStreamReader -> char[]
 /// - BufferedReader -> string for each line
-private static BufferedReader getRequestReader(Socket socket) throws IOException {
+private static BufferedReader getReader(Socket socket) throws IOException {
     return new BufferedReader(new InputStreamReader(socket.getInputStream()));
+}
+
+record RequestLine(String method, String path, String protocol) {
+    public static RequestLine of(String line) {
+        var data = line.split(" ");
+        var method = data[0];
+        var path = data[1];
+        var protocol = data[2];
+        return new RequestLine(method, path, protocol);
+    }
 }

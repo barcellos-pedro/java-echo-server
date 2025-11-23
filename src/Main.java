@@ -6,8 +6,8 @@ void main() throws IOException {
         // Main Loop
         for (; ; ) {
             // Accept client connection/socket
-            try (var socket = server.accept()) {
-                var reader = getReader(socket);
+            try (var request = server.accept()) {
+                var reader = getReader(request);
                 var rawReqLine = reader.readLine();
 
                 var requestLine = RequestLine.of(rawReqLine);
@@ -16,12 +16,12 @@ void main() throws IOException {
                 IO.println(requestLine);
                 IO.println(headers);
 
-                try (var out = socket.getOutputStream()) {
-                    var responseData = missingBody(headers) ?
-                            response("Hello World") :
-                            requestBody(headers, reader);
+                try (var response = request.getOutputStream()) {
+                    var responseData = hasBody(headers) ?
+                            getResponseBody(headers, reader) :
+                            getResponseBody("Hello World");
 
-                    out.write(responseData);
+                    response.write(responseData);
                 }
             } catch (IOException exception) {
                 throw new RuntimeException(exception);
@@ -61,11 +61,7 @@ private static Integer getContentLength(Map<String, String> headers) {
     return Integer.valueOf(headers.get("Content-Length"));
 }
 
-private static boolean missingBody(HashMap<String, String> headers) {
-    return !containsBody(headers);
-}
-
-private static boolean containsBody(HashMap<String, String> headers) {
+private static boolean hasBody(HashMap<String, String> headers) {
     return headers.containsKey("Content-Length");
 }
 
@@ -76,16 +72,16 @@ public static String TEMPLATE = """
         \r
         %s""";
 
-public static byte[] requestBody(Map<String, String> headers, BufferedReader reader) throws IOException {
+public static byte[] getResponseBody(Map<String, String> headers, BufferedReader reader) throws IOException {
     var reqBody = parseBody(headers, reader);
-    return response(reqBody);
+    return getResponseBody(reqBody);
 }
 
-private static byte[] response(char[] value) {
-    return response(new String(value));
+private static byte[] getResponseBody(char[] value) {
+    return getResponseBody(new String(value));
 }
 
-private static byte[] response(String value) {
+private static byte[] getResponseBody(String value) {
     byte[] bodyBytes = value.getBytes(UTF_8);
     var response = TEMPLATE.formatted(bodyBytes.length, value);
     return response.getBytes(UTF_8);

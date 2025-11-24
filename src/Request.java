@@ -43,12 +43,18 @@ public class Request {
         setHeaders(headers);
     }
 
-    public char[] parseBody() throws IOException {
+    public String parseBody() {
         var contentLength = Integer.parseInt(headers.get("Content-Length"));
         var body = new char[contentLength];
-        int bytesRead = reader.read(body, 0, contentLength);
-        IO.println("Body bytes parsed: " + bytesRead);
-        return body;
+
+        try {
+            int bytesRead = reader.read(body, 0, contentLength);
+            IO.println("Body bytes parsed: " + bytesRead);
+            return new String(body);
+        } catch (IOException exception) {
+            IO.println("Error parsing body\n" + exception);
+            return "";
+        }
     }
 
     public boolean hasBody() {

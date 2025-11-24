@@ -1,7 +1,7 @@
 void main() {
     try {
         HttpServer.create(8080)
-                .listen(Controller::handle);
+                .listen(Router::handle);
     } catch (IOException exception) {
         IO.println("[SERVER:ERROR] " + exception);
     }

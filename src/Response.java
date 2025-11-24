@@ -11,11 +11,7 @@ public class Response {
         return bindValues(type, value);
     }
 
-    public static String of(char[] value, Type type) {
-        return bindValues(type, new String(value));
-    }
-
-    public static String echo(Request request, Type type) throws IOException {
+    public static String echo(Request request, Type type) {
         var reqBody = request.parseBody();
         return of(reqBody, type);
     }

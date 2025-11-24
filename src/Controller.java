@@ -14,12 +14,18 @@ public class Controller {
     }
 
     public static byte[] handleMessage(Request request) throws IOException {
-        if (request.hasBody()) {
-            return Response.echo(request, Response.Type.JSON);
+        if (!request.getMethod().equals(HttpMethod.POST)) {
+            return Response.of("""
+                    { "message": "Request method must be a POST." }""", Response.Type.JSON);
         }
 
-        return Response.of("""
-                { "message": "Missing body in request." }""", Response.Type.JSON);
+        if (!request.hasBody()) {
+            return Response.of("""
+                    { "message": "Missing body in request." }""", Response.Type.JSON);
+        }
+
+        return Response.echo(request, Response.Type.JSON);
+
     }
 
     public static byte[] handleNotFound(Request request) {

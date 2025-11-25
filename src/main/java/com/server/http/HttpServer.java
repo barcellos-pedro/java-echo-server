@@ -1,3 +1,5 @@
+package main.java.com.server.http;
+
 import module java.base;
 
 public class HttpServer {
@@ -11,7 +13,7 @@ public class HttpServer {
         return new HttpServer(port);
     }
 
-    void listen(Consumer<Socket> handler) throws IOException {
+    public void listen(Consumer<Socket> handler) throws IOException {
         IO.println("Server running at http://localhost:" + port);
 
         try (var server = new ServerSocket(port)) {

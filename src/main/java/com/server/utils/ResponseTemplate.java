@@ -1,3 +1,5 @@
+package main.java.com.server.utils;
+
 public class ResponseTemplate {
     public static String TEXT = """
             HTTP/1.1 200 OK\r

@@ -1,3 +1,5 @@
+package main.java.com.server.http;
+
 import module java.base;
 
 public class Request {
@@ -110,7 +112,7 @@ public class Request {
 
     @Override
     public String toString() {
-        return "Request{method='%s', path='%s', protocol='%s', headers=%s}"
+        return "main.java.com.server.http.Request{method='%s', path='%s', protocol='%s', headers=%s}"
                 .formatted(method, path, protocol, headers);
     }
 }

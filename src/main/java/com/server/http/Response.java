@@ -1,4 +1,7 @@
+package main.java.com.server.http;
+
 import module java.base;
+import main.java.com.server.utils.ResponseTemplate;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
